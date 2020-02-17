@@ -1,3 +1,8 @@
 *.bam
 *.sam
-
+.snakemake/
+0_raw/
+1_subreads/
+benchmarks/
+logs/
+ccs_report.txt
