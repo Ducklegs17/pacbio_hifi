@@ -23,6 +23,10 @@ __default__ :
 
 pbindex :
         cpus-per-task : 1
-        mem           : "3000"
+        mem           : "200"
         time          : "00-01:00:00"
 
+ccs :
+        cpus-per-task : 10
+        mem           : "4000"
+        time          : "00-03:30:00"
