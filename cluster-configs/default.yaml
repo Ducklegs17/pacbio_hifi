@@ -30,3 +30,74 @@ ccs :
         cpus-per-task : 10
         mem           : "4000"
         time          : "00-03:30:00"
+
+pbmerge :
+        cpus-per-task : 1
+        mem           : "100"
+        time          : "00-00:10:00"
+
+pbmerge_sample :
+        cpus-per-task : 1
+        mem           : "500"
+        time          : "00-00:30:00"
+
+bbduk :
+        cpus-per-task : 10
+        mem           : "2000"
+        time          : "00-00:06:00"
+
+seqtk :
+        cpus-per-task : 1
+        mem           : "100"
+        time          : "00-00:01:00"
+
+
+bbmap_sort:
+        cpus-per-task : 1 
+        mem           : "3000"
+        time          : "00-00:01:00"
+
+select_longest:
+        cpus-per-task : 1
+        mem           : "200"
+        time          : "00-00:05:00"
+
+flye:
+        cpus-per-task : 10
+        mem           : "15000"
+        time          : "00-00:10:00"
+
+canu:
+        cpus-per-task : 1
+        mem           : "50"
+        time          : "00-04:00:00"
+
+hifiasm:
+        cpus-per-task : 10
+        mem           : "15000"
+        time          : "00-00:05:00"
+
+gfa2fa:
+        cpus-per-task : 1
+        mem           : 500
+        time          : "00-00:01:00"
+
+hifiasm_mummer:
+        cpus-per-task : 1
+        mem           : "500"
+        time          : "00-00:02:00"
+
+hifiasm_quast:
+        cpus-per-task : 1
+        mem           : "500"
+        time          : "00-00:01:00"
+
+quast :
+        cpus-per-task : 1
+        mem           : "500"
+        time          : "00-00:01:00"
+
+mummer :
+        cpus-per-task : 1
+        mem           : "500"
+        time          : "00-00:02:00"
