@@ -46,26 +46,32 @@ bbduk :
         mem           : "2000"
         time          : "00-00:06:00"
 
+bbduk_genome :
+        cpus-per-task : 20
+        mem           : "10000"
+        time          : "00-00:05:00"
+
+
 seqtk :
-        cpus-per-task : 1
-        mem           : "100"
-        time          : "00-00:01:00"
+        cpus-per-task : "{resources.cpu}"
+        mem           : "{resources.mem_mb}"
+        time          : "00-00:0{resources.time}:00"
 
 
 bbmap_sort:
         cpus-per-task : 1 
-        mem           : "3000"
-        time          : "00-00:01:00"
+        mem           : "70000"
+        time          : "00-04:00:00"
 
 select_longest:
         cpus-per-task : 1
-        mem           : "200"
-        time          : "00-00:05:00"
+        mem           : "2000"
+        time          : "00-00:30:00"
 
 flye:
-        cpus-per-task : 10
-        mem           : "15000"
-        time          : "00-00:10:00"
+        cpus-per-task : "{resources.cpu}"
+        mem           : "{resources.mem_mb}"
+        time          : "00-00:{resources.time}:00"
 
 canu:
         cpus-per-task : 1
@@ -73,9 +79,9 @@ canu:
         time          : "00-04:00:00"
 
 hifiasm:
-        cpus-per-task : 10
-        mem           : "15000"
-        time          : "00-00:05:00"
+        cpus-per-task : "{resources.cpu}"
+        mem           : "{resources.mem_mb}"
+        time          : "00-00:{resources.time}:00"
 
 gfa2fa:
         cpus-per-task : 1
@@ -95,9 +101,30 @@ hifiasm_quast:
 quast :
         cpus-per-task : 1
         mem           : "500"
-        time          : "00-00:01:00"
+        time          : "00-00:{resources.time}:00"
 
 mummer :
+        cpus-per-task : "{resources.cpu}"
+        mem           : "{resources.mem_mb}"
+        time          : "00-00:{resources.time}:00"
+
+busco:
         cpus-per-task : 1
-        mem           : "500"
-        time          : "00-00:02:00"
+        mem           : "3000"
+        time          : "00-00:01:00"
+
+gt_ltrharvest:
+        cpus-per-task : 10
+        mem           : "10000"
+        time          : "00-00:35:00"
+
+ltr_finder:
+        cpus-per-task : 10
+        mem           : "5000"
+        time          : "00-00:07:00"
+
+ltr_retriever:
+        cpus-per-task : 10
+        mem           : "20000"
+        time          : "00-03:30:00"
+
