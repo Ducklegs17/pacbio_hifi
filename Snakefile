@@ -13,7 +13,7 @@ LENGTH_CHLOROPLAST = ["134502"]
 LENGTH_MITOCHONDRIA = ["491515"]
 LENGTH_GENOME = ["387500000"]
 ASSEMBLY_TYPE = ["genome"]
-ASSEMBLY_TOOLS = ["hifiasm","hicanu","canu","flye"]
+ASSEMBLY_TOOLS = ["hifiasm","hicanu","canu"]
 READ_SELECTION_METHOD = ["longest","random"]
 HIFIASM_PATH = "/fast/users/a1761942/tools/hifiasm/hifiasm"
 HICANU_PATH = "/fast/users/a1761942/tools/canu/Linux-amd64/bin/canu"
@@ -41,13 +41,13 @@ rule all:
 		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
 		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("4_{ASS_TYPE}_assembly/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
-#		expand("quast/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
+		expand("quast/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("mummer/{ASS_TYPE}/prefix_{SAMPLE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}.delta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
-		expand("busco/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/full_table.tsv", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
+		expand("busco/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/results/run_poales_odb10/full_table.tsv", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/harvest/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/assembly.fa.harvest.scn",TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/finder/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/assembly.fasta.finder.combine.scn", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/retriever/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/{LTRFILE}", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, LTRFILE = LTRFILES), 
-		expand("benchcanu/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_prefix_{SAMPLE}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/CANU_BENCHMARKS.txt",ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, CANU_BENCMARKS = CANU_BENCHMARK_FILES),
+		expand("benchcanu/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_prefix_{SAMPLE}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/{CANU_BENCHMARKS}.txt",ASS_TYPE = ASSEMBLY_TYPE, TOOL = ["canu","hicanu"], READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, CANU_BENCHMARKS = CANU_BENCHMARK_FILES),
 		expand("length/{ASS_TYPE}_{TOOL}_{SAMPLE}_{READ_SELECT}_{KMER}_{COV}_{DEPTH}.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 
 
@@ -338,8 +338,8 @@ rule flye:
 		out = "4_{ass_type}_assembly/flye/{sample}/{read_select}_{kmer}_{cov}_{depth}",
 	resources:
 		time = lambda wildcards, input: (360 if wildcards.ass_type  == 'genome' else 10),
-		mem_mb = lambda wildcards, input: (96000 if wildcards.ass_type == 'genome' else 5000),
-		cpu = lambda wildcards, input: (32 if wildcards.ass_type == 'genome' else 5), 
+		mem_mb = lambda wildcards, input: (70000 if wildcards.ass_type == 'genome' else 5000),
+		cpu = lambda wildcards, input: (25 if wildcards.ass_type == 'genome' else 5), 
 	conda:
 		"envs/flye.yaml",
 	shell:
@@ -580,8 +580,10 @@ rule quast:
 		time = lambda wildcards, input: (45 if {wildcards.ass_type}  == 'genome' else 1),
 	params:
 		out = "quast/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}"
-	conda:
-		"envs/quast.yaml",
+#	conda:
+#		"envs/quast.yaml",
+	singularity:
+		"docker://quay.io/biocontainers/quast:5.0.2--1"
 	shell:
 		"""
 		quast {input} --threads {threads} -o {params.out}
@@ -589,24 +591,26 @@ rule quast:
 
 rule busco:
 	input:
-		"4_genome_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
+		fasta = "4_genome_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
 	output:
-		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/full_table.tsv",
+		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/results/run_poales_odb10/full_table.tsv",
 	log:
 		"logs/busco/genome/{tool}_{read_select}_{sample}_{kmer}_{cov}_{depth}.log",
 	benchmark:
 		"benchmarks/busco/assemblytype_genome_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
 	threads:
-		1
+		MAX_THREADS
+	shadow:
+		"shallow",
 	singularity:
 		"docker://ezlabgva/busco:v4.0.5_cv1",
 	params:
-		outdir = "busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}",
-		mode = "genome",
-		lineage_path = "reference/embryophyta_odb9",
+		outdir = "assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}",
+		lineage_path = "./reference/poales_odb10",
 	shell:
 		"""
-		busco -h > {output}
+		busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome
+		mv results/ busco/{params.outdir}/
 		"""
 
 rule gt_ltrharvest:
@@ -725,7 +729,7 @@ rule contig_length:
 		"logs/length/assemblytype_{ass_type}_prefix_{sample}_assemblytool_{tool}_readselect_{read_select}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
 	shell:
 		"""
-		cat {input} | awk '$0 ~ ">" {if (NR > 1) {print c;} c=0;printf substr($0,2,100) "\t"; } $0 !~ ">" {c+=length($0);} END { print c; }' > {output}
+		cat {input} | awk '$0 ~ ">" {{if (NR > 1) {{print c;}} c=0;printf substr($0,2,100) "\t"; }} $0 !~ ">" {{c+=length($0);}} END {{ print c; }}' > {output}
 		"""
 rule mummer:
 	input:
