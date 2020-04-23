@@ -42,6 +42,7 @@ rule all:
 		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("4_{ASS_TYPE}_assembly/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("quast/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
+		expand("quastref/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("mummer/{ASS_TYPE}/prefix_{SAMPLE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}.delta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("busco/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/results/run_poales_odb10/full_table.tsv", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/harvest/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/assembly.fa.harvest.scn",TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
@@ -565,6 +566,7 @@ rule hifiasm:
 #		"""
 
 #Check quality statistics
+
 rule quast:
 	input:
 		"4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
@@ -580,13 +582,41 @@ rule quast:
 		time = lambda wildcards, input: (45 if {wildcards.ass_type}  == 'genome' else 1),
 	params:
 		out = "quast/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}"
-#	conda:
-#		"envs/quast.yaml",
 	singularity:
 		"docker://quay.io/biocontainers/quast:5.0.2--1"
 	shell:
 		"""
 		quast {input} --threads {threads} -o {params.out}
+		"""
+
+
+rule quastref:
+	input:
+		ref = "reference/{ass_type}.fasta",
+		ass = "4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
+	output:
+		"quastref/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/report.tsv",
+	log:
+		"logs/quastref/{ass_type}/{tool}_{read_select}_{sample}_{kmer}_{cov}_{depth}.tsv",
+	benchmark:
+		"benchmarks/quastref/assemblytype_{ass_type}_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	threads:
+		MAX_THREADS
+	resources:
+		mem_mb = lambda wildcards, input: (15000 if wildcards.ass_type == 'genome' else 3000),
+		cpu = lambda wildcards, input: (5 if wildcards.ass_type == 'genome' else 1),
+		time = lambda wildcards, input: (60 if wildcards.ass_type == 'genome' else 2),
+	params:
+		out = "quastref/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}"
+	singularity:
+		"docker://quay.io/biocontainers/quast:5.0.2--1"
+	shell:
+		"""
+		if [ {wildcards.ass_type} == 'genome' ]; then
+			quast {input.ass} --eukaryote --no-icarus --no-html --large -r {input.ref} --threads {threads} -o {params.out}
+		else
+			quast {input.ass} --no-icarus --no-html -r {input.ref} --threads {threads} -o {params.out}
+		fi
 		"""
 
 rule busco:
@@ -610,7 +640,10 @@ rule busco:
 	shell:
 		"""
 		busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome
-		mv results/ busco/{params.outdir}/
+		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
+		mv results/blast_db busco/{params.outdir}/results
+		mv results/logs busco/{params.outdir}/results
+		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
 		"""
 
 rule gt_ltrharvest:

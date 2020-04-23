@@ -103,6 +103,11 @@ quast :
         mem           : "500"
         time          : "00-00:{resources.time}:00"
 
+quastref :
+        cpus-per-task : "{resources.cpu}"
+        mem           : "{resources.mem_mb}"
+        time          : "00-00:{resources.time}:00"
+
 mummer :
         cpus-per-task : "{resources.cpu}"
         mem           : "{resources.mem_mb}"
