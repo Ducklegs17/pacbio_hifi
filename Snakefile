@@ -6,21 +6,22 @@ PREFIXES = ["SRR9969479.m64011_190430_000122", "SRR9969480.m54119U_190503_125238
 BBDUK_KMER = ["31"]
 BBDUK_COVERAGE = ["0.9"]
 CHUNKS = 20
-READ_DEPTH = ["10","25","15","35","50"]
+READ_DEPTH = ["10","15","20","25","30","35","40","45","49"]
 #10,25,15,35,50
+#"10","15","20","25","30","35","40","45","49"
 #10,25,75,100,50
 LENGTH_CHLOROPLAST = ["134502"]
 LENGTH_MITOCHONDRIA = ["491515"]
 LENGTH_GENOME = ["387500000"]
 ASSEMBLY_TYPE = ["genome"]
-ASSEMBLY_TOOLS = ["hifiasm","hicanu","canu","flye"]
-READ_SELECTION_METHOD = ["longest","random"]
-HIFIASM_PATH = "/fast/users/a1761942/tools/hifiasm/hifiasm"
+ASSEMBLY_TOOLS = ["hifiasm","flye"]
+READ_SELECTION_METHOD = ["random","longest"]
+HIFIASM_PATH = "/shared/cmatthews/tools/hifiasm/hifiasm"
 HICANU_PATH = "/shared/cmatthews/tools/canu/Linux-amd64/bin/canu"
 GFA_TYPES = ["p_ctg"]
-LTR_FINDER_PATH = "/fast/users/a1761942/tools/LTR_FINDER_parallel-master/LTR_FINDER_parallel"
+LTR_FINDER_PATH = "/shared/cmatthews/tools/LTR_FINDER_parallel-master/LTR_FINDER_parallel"
 LTRFILES = ["rawLTR.scn","assembly.fasta.out.LAI"]
-MUMMER_PATH = "/home/a1761942/fast_dir/tools/mummer-4.0.0beta2/" 
+MUMMER_PATH = "/shared/cmatthews/tools/mummer-4.0.0beta2/" 
 CANU_BENCHMARK_FILES = ["job_finish_state","submit_time","start_time","end_time","walltime_reserved","walltime_elapsed","max_memory","max_disk_write","max_disk_read","num_cores"]
 
 
@@ -39,7 +40,7 @@ rule all:
 #		expand("2_{ASS_TYPE}_reads/unsorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 #		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 #		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
-#		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
+		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("4_{ASS_TYPE}_assembly/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("quast/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("quastref/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
@@ -47,7 +48,7 @@ rule all:
 		expand("busco/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/results/run_poales_odb10/full_table.tsv", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/harvest/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/assembly.fa.harvest.scn",TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("ltr/finder/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/assembly.fasta.finder.combine.scn", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
-		expand("ltr/retriever/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/{LTRFILE}", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, LTRFILE = LTRFILES), 
+		expand("ltr/retriever/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/complete", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH), 
 		expand("benchcanu/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_prefix_{SAMPLE}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/{CANU_BENCHMARKS}.txt",ASS_TYPE = ASSEMBLY_TYPE, TOOL = ["canu","hicanu"], READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, CANU_BENCHMARKS = CANU_BENCHMARK_FILES),
 		expand("length/{ASS_TYPE}_{TOOL}_{SAMPLE}_{READ_SELECT}_{KMER}_{COV}_{DEPTH}.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 
@@ -174,54 +175,54 @@ rule all:
 #		"""
 #
 ##subset the matching reads down to specified coverage
-#rule seqtk:
-#	input:
-#		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	output:
-#		"3_{ass_type}_subset/random/{sample}_{kmer}_{cov}_{depth}.fasta",
-#	log:
-#		"logs/seqtk/random_{ass_type}_{sample}_{kmer}_{cov}_{depth}.log",
-#	benchmark:
-#		"benchmarks/seqtk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
-#	threads:
-#		1
-#	resources:
-#                time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
-#                mem_mb = lambda wildcards, input: (3000 if wildcards.ass_type == 'genome' else 200),
-#                cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
-#	params:
-#		chlor = LENGTH_CHLOROPLAST,
-#		mito = LENGTH_MITOCHONDRIA,
-#		geno = LENGTH_GENOME,
-#	conda:
-#		"envs/seqtk.yaml",
-#	shell:
-#		"""		
-#		if [ {wildcards.ass_type} == "chloroplast" ]; then
-#			LENGTH={params.chlor}
-#		fi
-#		if [ {wildcards.ass_type} == "mitochondria" ]; then
-#			LENGTH={params.mito}
-#		fi
-#		if [ {wildcards.ass_type} == "genome" ]; then
-#			LENGTH={params.geno}
-#		fi
-#		BP_READS="$(grep -v "^>" {input} | wc | awk "{{print \$3-\$1}}")"
-#                NO_READS="$(grep '>' {input} | wc -l)"
-#                echo "Total number of reads: ${{NO_READS}}"
-#                AVG="$(( ${{BP_READS}} / ${{NO_READS}} ))"
-#                echo "AVG length of reads: ${{AVG}}"
-#                NUM="$(( ${{LENGTH}} * {wildcards.depth} / ${{AVG}} ))"
-#                echo "Number of reads required to achieve depth of {wildcards.depth}: ${{NUM}}"
-#                MAX_DEPTH="$(( ${{BP_READS}} / ${{LENGTH}} ))"
-#                if [ ${{NUM}} -gt ${{NO_READS}} ]; then
-#                        NUM=${{NO_READS}}
-#                        echo "Number of reads required for requested coverage is greater than the number of reads available."
-#                        echo "All reads will be used, giving a coverage depth of ${{MAX_DEPTH}}x"
-#                fi
-#                echo "Subsetting ..."
-#                seqtk sample -s100 {input} ${{NUM}} > {output}
-#		"""
+rule seqtk:
+	input:
+		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	output:
+		"3_{ass_type}_subset/random/{sample}_{kmer}_{cov}_{depth}.fasta",
+	log:
+		"logs/seqtk/random_{ass_type}_{sample}_{kmer}_{cov}_{depth}.log",
+	benchmark:
+		"benchmarks/seqtk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	threads:
+		1
+	resources:
+                time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
+                mem_mb = lambda wildcards, input: (3000 if wildcards.ass_type == 'genome' else 200),
+                cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
+	params:
+		chlor = LENGTH_CHLOROPLAST,
+		mito = LENGTH_MITOCHONDRIA,
+		geno = LENGTH_GENOME,
+	conda:
+		"envs/seqtk.yaml",
+	shell:
+		"""		
+		if [ {wildcards.ass_type} == "chloroplast" ]; then
+			LENGTH={params.chlor}
+		fi
+		if [ {wildcards.ass_type} == "mitochondria" ]; then
+			LENGTH={params.mito}
+		fi
+		if [ {wildcards.ass_type} == "genome" ]; then
+			LENGTH={params.geno}
+		fi
+		BP_READS="$(grep -v "^>" {input} | wc | awk "{{print \$3-\$1}}")"
+                NO_READS="$(grep '>' {input} | wc -l)"
+                echo "Total number of reads: ${{NO_READS}}"
+                AVG="$(( ${{BP_READS}} / ${{NO_READS}} ))"
+                echo "AVG length of reads: ${{AVG}}"
+                NUM="$(( ${{LENGTH}} * {wildcards.depth} / ${{AVG}} ))"
+                echo "Number of reads required to achieve depth of {wildcards.depth}: ${{NUM}}"
+                MAX_DEPTH="$(( ${{BP_READS}} / ${{LENGTH}} ))"
+                if [ ${{NUM}} -gt ${{NO_READS}} ]; then
+                        NUM=${{NO_READS}}
+                        echo "Number of reads required for requested coverage is greater than the number of reads available."
+                        echo "All reads will be used, giving a coverage depth of ${{MAX_DEPTH}}x"
+                fi
+                echo "Subsetting ..."
+                seqtk sample -s100 {input} ${{NUM}} > {output}
+		"""
 #
 #rule bbmap_sort:
 #	input:
@@ -279,45 +280,45 @@ rule all:
 #		rm length.tmp
 #                """
 #
-#rule select_longest:
-#	input:
-#		fa = "2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
-#		list = "2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}_coveragetable.txt",
-#	output:
-#		"3_{ass_type}_subset/longest/{sample}_{kmer}_{cov}_{depth}.fasta",
-#	log:
-#		"logs/select_longest/{ass_type}/{sample}_{kmer}_{cov}_{depth}.log",
-#	benchmark:
-#		"benchmarks/selectlongest/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
-#	threads:
-#		1
-#	params:
-#		length_mito = LENGTH_MITOCHONDRIA,
-#		length_chloro = LENGTH_CHLOROPLAST,
-#		length_genome = LENGTH_GENOME,
-#	shell:
-#		"""
-#		if [ {wildcards.ass_type} == "chloroplast" ]; then
-#			LEN={params.length_chloro}
-#		elif [ {wildcards.ass_type} == "mitochondria" ]; then
-#			LEN={params.length_mito}
-#		elif [ {wildcards.ass_type} == "genome" ]; then
-#			LEN={params.length_genome}
-#		fi
-#
-#		NO_READS=$(grep '^>' {input.fa} | wc -l)
-#		NUM=$(awk '$1<{wildcards.depth}{{c++}} END{{print c+0}}' {input.list})
-#		NUM=$(( ${{NUM}} + 1 ))
-#
-#		if [ ${{NUM}} -eq ${{NO_READS}} ]; then
-#			DEPTH=$( tail -n 1 {input.list})
-#		echo "Number of reads required for requested coverage is greater than the number of reads available."
-#			echo "All reads will be used, giving a coverage depth of ${{DEPTH}}x"
-#		fi
-#
-#		awk "/^>/ {{n++}} n>${{NUM}} {{exit}} {{print}}" {input} > {output}
-#
-#		"""
+rule select_longest:
+	input:
+		fa = "2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
+		list = "2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}_coveragetable.txt",
+	output:
+		"3_{ass_type}_subset/longest/{sample}_{kmer}_{cov}_{depth}.fasta",
+	log:
+		"logs/select_longest/{ass_type}/{sample}_{kmer}_{cov}_{depth}.log",
+	benchmark:
+		"benchmarks/selectlongest/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	threads:
+		1
+	params:
+		length_mito = LENGTH_MITOCHONDRIA,
+		length_chloro = LENGTH_CHLOROPLAST,
+		length_genome = LENGTH_GENOME,
+	shell:
+		"""
+		if [ {wildcards.ass_type} == "chloroplast" ]; then
+			LEN={params.length_chloro}
+		elif [ {wildcards.ass_type} == "mitochondria" ]; then
+			LEN={params.length_mito}
+		elif [ {wildcards.ass_type} == "genome" ]; then
+			LEN={params.length_genome}
+		fi
+
+		NO_READS=$(grep '^>' {input.fa} | wc -l)
+		NUM=$(awk '$1<{wildcards.depth}{{c++}} END{{print c+0}}' {input.list})
+		NUM=$(( ${{NUM}} + 1 ))
+
+		if [ ${{NUM}} -eq ${{NO_READS}} ]; then
+			DEPTH=$( tail -n 1 {input.list})
+		echo "Number of reads required for requested coverage is greater than the number of reads available."
+			echo "All reads will be used, giving a coverage depth of ${{DEPTH}}x"
+		fi
+
+		awk "/^>/ {{n++}} n>${{NUM}} {{exit}} {{print}}" {input} > {output}
+
+		"""
 
 
 #Assemble with flye
@@ -338,9 +339,9 @@ rule flye:
 		genome = LENGTH_GENOME,
 		out = "4_{ass_type}_assembly/flye/{sample}/{read_select}_{kmer}_{cov}_{depth}",
 	resources:
-		time = lambda wildcards, input: (360 if wildcards.ass_type  == 'genome' else 10),
-		mem_mb = lambda wildcards, input: (70000 if wildcards.ass_type == 'genome' else 5000),
-		cpu = lambda wildcards, input: (25 if wildcards.ass_type == 'genome' else 5), 
+		time = lambda wildcards, input: (1400 if wildcards.ass_type  == 'genome' else 10),
+		mem_mb = lambda wildcards, input: (350000 if wildcards.ass_type == 'genome' else 5000),
+		cpu = lambda wildcards, input: (48 if wildcards.ass_type == 'genome' else 5), 
 	conda:
 		"envs/flye.yaml",
 	shell:
@@ -537,9 +538,9 @@ rule hifiasm:
 	shadow:
 		"shallow"
 	resources:
-		time = lambda wildcards, input: (180 if wildcards.ass_type  == 'genome' else 10),
-		mem_mb = lambda wildcards, input: (60000 if wildcards.ass_type == 'genome' else 5000),
-		cpu = lambda wildcards, input: (20 if wildcards.ass_type == 'genome' else 5),
+		time = lambda wildcards, input: (2000 if wildcards.ass_type  == 'genome' else 10),
+		mem_mb = lambda wildcards, input: (150000 if wildcards.ass_type == 'genome' else 5000),
+		cpu = lambda wildcards, input: (24 if wildcards.ass_type == 'genome' else 5),
 	threads:
 		MAX_THREADS
 	shell:
@@ -579,7 +580,7 @@ rule quast:
 	threads:
 		1
 	resources:
-		time = lambda wildcards, input: (45 if {wildcards.ass_type}  == 'genome' else 1),
+		time = lambda wildcards, input: (5 if wildcards.ass_type  == 'genome' else 1),
 	params:
 		out = "quast/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}"
 	singularity:
@@ -778,8 +779,8 @@ rule mummer:
 		MAX_THREADS
 	resources:
 		time = lambda wildcards, input: (90 if wildcards.ass_type == "genome" else 1),
-		mem_mb = lambda wildcards, input: (30000 if wildcards.ass_type == "genome" else 200),
-		cpu = lambda wildcards, input: (10 if wildcards.ass_type == "genome" else 1),
+		mem_mb = lambda wildcards, input: (40000 if wildcards.ass_type == "genome" else 200),
+		cpu = lambda wildcards, input: (20 if wildcards.ass_type == "genome" else 1),
 	params:
 		pref = "prefix_{sample}_assemblytool_{tool}_readselect_{read_select}_kmer_{kmer}_cov_{cov}_depth_{depth}",
 		mummer = MUMMER_PATH,
