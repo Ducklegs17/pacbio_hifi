@@ -13,7 +13,7 @@ LENGTH_CHLOROPLAST = ["134502"]
 LENGTH_MITOCHONDRIA = ["491515"]
 LENGTH_GENOME = ["387500000"]
 ASSEMBLY_TYPE = ["genome"]
-ASSEMBLY_TOOLS = ["hifiasm","hicanu","canu"]
+ASSEMBLY_TOOLS = ["hifiasm","hicanu","canu","flye"]
 READ_SELECTION_METHOD = ["longest","random"]
 HIFIASM_PATH = "/fast/users/a1761942/tools/hifiasm/hifiasm"
 HICANU_PATH = "/fast/users/a1761942/tools/canu/Linux-amd64/bin/canu"
@@ -186,7 +186,7 @@ rule seqtk:
 	threads:
 		1
 	resources:
-                time = lambda wildcards, input: (40 if wildcards.ass_type  == 'genome' else 1),
+                time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
                 mem_mb = lambda wildcards, input: (3000 if wildcards.ass_type == 'genome' else 200),
                 cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
 	params:
@@ -631,7 +631,7 @@ rule busco:
 	threads:
 		MAX_THREADS
 	shadow:
-		"shallow",
+		"full",
 	singularity:
 		"docker://ezlabgva/busco:v4.0.5_cv1",
 	params:
