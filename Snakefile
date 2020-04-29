@@ -540,8 +540,8 @@ rule hifiasm:
 		"shallow"
 	resources:
 		time = lambda wildcards, input: (2000 if wildcards.ass_type  == 'genome' else 10),
-		mem_mb = lambda wildcards, input: (150000 if wildcards.ass_type == 'genome' else 5000),
-		cpu = lambda wildcards, input: (24 if wildcards.ass_type == 'genome' else 5),
+		mem_mb = lambda wildcards, input: (370000 if wildcards.ass_type == 'genome' else 5000),
+		cpu = lambda wildcards, input: (MAX_THREADS if wildcards.ass_type == 'genome' else 5),
 	threads:
 		MAX_THREADS
 	shell:
