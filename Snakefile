@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_THREADS = 32
+MAX_THREADS = 48
 SAMPLES = ["SRR99694"]
 PREFIXES = ["SRR9969479.m64011_190430_000122", "SRR9969480.m54119U_190503_125238"]
 BBDUK_KMER = ["31"]
@@ -30,6 +30,7 @@ localrules:
 	canu,
 	hicanu,
 	generate_coverage_list,
+	select_longest,
 
 rule all:
 	input:
@@ -339,9 +340,9 @@ rule flye:
 		genome = LENGTH_GENOME,
 		out = "4_{ass_type}_assembly/flye/{sample}/{read_select}_{kmer}_{cov}_{depth}",
 	resources:
-		time = lambda wildcards, input: (1400 if wildcards.ass_type  == 'genome' else 10),
-		mem_mb = lambda wildcards, input: (350000 if wildcards.ass_type == 'genome' else 5000),
-		cpu = lambda wildcards, input: (48 if wildcards.ass_type == 'genome' else 5), 
+		time = lambda wildcards, input: (2000 if wildcards.ass_type  == 'genome' else 10),
+		mem_mb = lambda wildcards, input: (370000 if wildcards.ass_type == 'genome' else 5000),
+		cpu = lambda wildcards, input: (MAX_THREADS if wildcards.ass_type == 'genome' else 5), 
 	conda:
 		"envs/flye.yaml",
 	shell:
@@ -400,8 +401,8 @@ rule canu:
 		fi	
 		if [ {wildcards.ass_type} == 'genome' ]; then
 			SIZE={params.genome}
-			JTIME="--time=01:00:00"
-			ETIME="--time=00:20:00"
+			JTIME="--time=72:00:00"
+			ETIME="--time=72:00:00"
 			echo "Starting genome assembly ..."
 		fi
 		
@@ -459,8 +460,8 @@ rule hicanu:
 		fi	
 		if [ {wildcards.ass_type} == 'genome' ]; then
 			SIZE={params.genome}
-			JTIME="--time=01:00:00"
-			ETIME="--time=00:20:00"
+			JTIME="--time=72:00:00"
+			ETIME="--time=72:00:00"
 			echo "Starting HiCanu genome assembly ..."
 		fi
 		
