@@ -39,8 +39,8 @@ rule all:
 #		expand("1_subreads/{PREFIX}.ccs.bam", PREFIX = PREFIXES),
 #		expand("1_subreads/{SAMPLE}.ccs.bam", SAMPLE = SAMPLES),
 #		expand("2_{ASS_TYPE}_reads/unsorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
-#		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
-#		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
+		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
+		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
 		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("4_{ASS_TYPE}_assembly/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 		expand("quast/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/report.tsv", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
@@ -225,62 +225,62 @@ rule seqtk:
                 seqtk sample -s100 {input} ${{NUM}} > {output}
 		"""
 #
-#rule bbmap_sort:
-#	input:
-#		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	output:
-#		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbmap_sort/{ass_type}{sample}_{kmer}_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbmapsort/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		1
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		sortbyname.sh in={input} out={output} name=f length=t ascending=f -Xmx60g
-#		"""
-#
-#rule generate_coverage_list:
-#	input:
-#		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
-#	output:
-#		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}_coveragetable.txt",
-#	log:
-#		"logs/generatecoveragelist/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
-#	benchmark:
-#		"benchmarks/generatecoveragelist/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		1
-#	params:
-#		length_mito = LENGTH_MITOCHONDRIA,
-#		length_chloro = LENGTH_CHLOROPLAST,
-#		length_genome = LENGTH_GENOME,
-#	shell:
-#		"""
-#		if [ {wildcards.ass_type} == "chloroplast" ]; then
-#			LEN={params.length_chloro}
-#		elif [ {wildcards.ass_type} == "mitochondria" ]; then
-#			LEN={params.length_mito}
-#		elif [ {wildcards.ass_type} == "genome" ]; then
-#			LEN={params.length_genome}
-#		fi
-#		touch length.tmp && rm length.tmp
-#		x=0
-#		awk '/^>/{{if (l!="") print l; l=0; next}}{{l+=length($0)}}' {input} >> length.tmp
-#
-#		while IFS= read -r line
-#		do
-#			x=$(( ${{x}} + ${{line}} ))
-#			pr=$(( ${{x}} / ${{LEN}} ))
-#			echo "${{pr}}" >> {output}
-#		done < "length.tmp"
-#
-#		rm length.tmp
-#                """
-#
+rule bbmap_sort:
+	input:
+		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	output:
+		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbmap_sort/{ass_type}{sample}_{kmer}_{cov}.log",
+	benchmark:
+		"benchmarks/bbmapsort/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		1
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		sortbyname.sh in={input} out={output} name=f length=t ascending=f -Xmx60g
+		"""
+
+rule generate_coverage_list:
+	input:
+		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
+	output:
+		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}_coveragetable.txt",
+	log:
+		"logs/generatecoveragelist/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
+	benchmark:
+		"benchmarks/generatecoveragelist/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		1
+	params:
+		length_mito = LENGTH_MITOCHONDRIA,
+		length_chloro = LENGTH_CHLOROPLAST,
+		length_genome = LENGTH_GENOME,
+	shell:
+		"""
+		if [ {wildcards.ass_type} == "chloroplast" ]; then
+			LEN={params.length_chloro}
+		elif [ {wildcards.ass_type} == "mitochondria" ]; then
+			LEN={params.length_mito}
+		elif [ {wildcards.ass_type} == "genome" ]; then
+			LEN={params.length_genome}
+		fi
+		touch length.tmp && rm length.tmp
+		x=0
+		awk '/^>/{{if (l!="") print l; l=0; next}}{{l+=length($0)}}' {input} >> length.tmp
+
+		while IFS= read -r line
+		do
+			x=$(( ${{x}} + ${{line}} ))
+			pr=$(( ${{x}} / ${{LEN}} ))
+			echo "${{pr}}" >> {output}
+		done < "length.tmp"
+
+		rm length.tmp
+                """
+
 rule select_longest:
 	input:
 		fa = "2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
@@ -442,6 +442,8 @@ rule hicanu:
 		mito = LENGTH_MITOCHONDRIA,
 		genome = LENGTH_GENOME,
 		jobName = "{depth}{kmer}{cov}",
+	conda:
+		"envs/canuv2.yaml",
 	shell:
 		"""	
 		cp canuFailure.sh {params.dir}
