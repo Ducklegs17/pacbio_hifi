@@ -21,4 +21,12 @@ make
 
 git clone https://github.com/oushujun/LTR_FINDER_parallel.git
 
+### Hicanu
 
+```
+git clone https://github.com/marbl/canu.git
+cd canu
+git checkout hicanu_rc
+cd src
+make
+```
