@@ -189,7 +189,7 @@ rule seqtk:
 		1
 	resources:
                 time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
-                mem_mb = lambda wildcards, input: (3000 if wildcards.ass_type == 'genome' else 200),
+                mem_mb = lambda wildcards, input: (15000 if wildcards.ass_type == 'genome' else 200),
                 cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
 	params:
 		chlor = LENGTH_CHLOROPLAST,
