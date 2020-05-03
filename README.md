@@ -26,8 +26,7 @@ make
 git clone https://github.com/oushujun/LTR_FINDER_parallel.git
 ```
 
-### HiCanu (development branch used, Canu 2.0 was released partway through the project)
-
+### Hicanu
 ```
 git clone https://github.com/marbl/canu.git
 cd canu
