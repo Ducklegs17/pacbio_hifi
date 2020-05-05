@@ -38,7 +38,7 @@ rule all:
 #		expand("1_subreads/chunks/{PREFIX}.ccs.{NUM}.bam", NUM = range(1,CHUNKS+1), PREFIX = PREFIXES),
 #		expand("1_subreads/{PREFIX}.ccs.bam", PREFIX = PREFIXES),
 #		expand("1_subreads/{SAMPLE}.ccs.bam", SAMPLE = SAMPLES),
-#		expand("2_{ASS_TYPE}_reads/unsorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
+		expand("2_{ASS_TYPE}_reads/unsorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
 		expand("3_{ASS_TYPE}_subset/{READ_SELECT}/{SAMPLE}_{KMER}_{COV}_{DEPTH}.fasta", ASS_TYPE = ASSEMBLY_TYPE, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
@@ -154,7 +154,49 @@ rule all:
 #		echo "Extracting {wildcards.ass_type} reads with bbduk..."
 #		bbduk.sh in={input.bam} outm={output.out} ref={input.ref} threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
 #		"""
-#
+
+rule bbdukfq:
+	input:
+		fastq = "1_subreads/{sample}.fastq",
+		ref = "reference/{ass_type}.fasta",
+	output:
+		 out = "2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbdukfq/{sample}_{ass_type}_{kmer}_{cov}.log",
+	benchmark:
+		"benchmarks/bbdukfq/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		MAX_THREADS
+	wildcard_constraints:
+		ass_type = "(mitochondria|chloroplast)",
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		bbduk.sh in={input.fastq} outm={output.out} ref={input.ref} qin=33 threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
+		"""
+rule bbdukfq_genome:
+	input:
+		seq = "1_subreads/{sample}.fastq",
+		ref1 = "reference/chloroplast.fasta",
+		ref2 = "reference/mitochondria.fasta",
+	output:
+		"2_genome_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
+	benchmark:
+		"benchmarks/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		MAX_THREADS
+	wildcard_constraints:
+		ass_type = "genome",
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} -Xmx60g mincovfraction={wildcards.cov}
+		"""
+
 #rule bbduk_genome:
 #	input:
 #		seq = "1_subreads/{sample}.ccs.bam",
@@ -267,18 +309,18 @@ rule generate_coverage_list:
 		elif [ {wildcards.ass_type} == "genome" ]; then
 			LEN={params.length_genome}
 		fi
-		touch length.tmp && rm length.tmp
+		touch {wildcards.ass_type}.tmp && rm {wildcards.ass_type}.tmp
 		x=0
-		awk '/^>/{{if (l!="") print l; l=0; next}}{{l+=length($0)}}' {input} >> length.tmp
+		awk '/^>/{{if (l!="") print l; l=0; next}}{{l+=length($0)}}' {input} >> {wildcards.ass_type}.tmp
 
 		while IFS= read -r line
 		do
 			x=$(( ${{x}} + ${{line}} ))
 			pr=$(( ${{x}} / ${{LEN}} ))
 			echo "${{pr}}" >> {output}
-		done < "length.tmp"
+		done < "{wildcards.ass_type}.tmp"
 
-		rm length.tmp
+		rm {wildcards.ass_type}.tmp
                 """
 
 rule select_longest:
@@ -294,6 +336,7 @@ rule select_longest:
 	threads:
 		1
 	params:
+		temp = "3_{ass_type}_subset/longest/{sample}{kmer}{cov}{depth}",
 		length_mito = LENGTH_MITOCHONDRIA,
 		length_chloro = LENGTH_CHLOROPLAST,
 		length_genome = LENGTH_GENOME,
@@ -313,12 +356,13 @@ rule select_longest:
 
 		if [ ${{NUM}} -eq ${{NO_READS}} ]; then
 			DEPTH=$( tail -n 1 {input.list})
-		echo "Number of reads required for requested coverage is greater than the number of reads available."
+			echo "Number of reads required for requested coverage is greater than the number of reads available."
 			echo "All reads will be used, giving a coverage depth of ${{DEPTH}}x"
+			cp {input.fa} {params.temp}
+			mv {params.temp} {output}
+		else
+			awk "/^>/ {{n++}} n>${{NUM}} {{exit}} {{print}}" {input} > {output}
 		fi
-
-		awk "/^>/ {{n++}} n>${{NUM}} {{exit}} {{print}}" {input} > {output}
-
 		"""
 
 

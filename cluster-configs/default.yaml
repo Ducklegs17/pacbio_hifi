@@ -51,6 +51,16 @@ bbduk_genome :
         mem           : "10000"
         time          : "00-00:05:00"
 
+bbdukfq :
+        cpus-per-task : 24
+        mem           : "10000"
+        time          : "00-00:10:00"
+
+bbdukfq_genome :
+        cpus-per-task : 24
+        mem           : "20000"
+        time          : "00-00:10:00"
+
 
 seqtk :
         cpus-per-task : "{resources.cpu}"
