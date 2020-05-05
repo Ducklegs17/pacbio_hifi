@@ -194,7 +194,7 @@ rule bbdukfq_genome:
 		"envs/bbmap.yaml",
 	shell:
 		"""
-		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} -Xmx60g mincovfraction={wildcards.cov}
+		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} qin=33 -Xmx60g mincovfraction={wildcards.cov}
 		"""
 
 #rule bbduk_genome:
