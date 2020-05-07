@@ -52,7 +52,7 @@ rule all:
 		expand("ltr/retriever/assemblytype_genome_assemblytool_{TOOL}_readselect_{READ_SELECT}_prefix_{SAMPLE}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/complete", TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH), 
 		expand("benchcanu/assemblytype_{ASS_TYPE}_assemblytool_{TOOL}_prefix_{SAMPLE}_readselect_{READ_SELECT}_kmer_{KMER}_cov_{COV}_depth_{DEPTH}/{CANU_BENCHMARKS}.txt",ASS_TYPE = ASSEMBLY_TYPE, TOOL = ["canu","hicanu"], READ_SELECT = READ_SELECTION_METHOD, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH, CANU_BENCHMARKS = CANU_BENCHMARK_FILES),
 		expand("length/{ASS_TYPE}_{TOOL}_{SAMPLE}_{READ_SELECT}_{KMER}_{COV}_{DEPTH}.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, TOOL = ASSEMBLY_TOOLS, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
-
+		expand("5_{ASS_TYPE}_polished/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/1_assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 
 #creates an index file of the raw hifi reads
 #rule pbindex:
@@ -424,11 +424,12 @@ rule canu:
 		chlor = LENGTH_CHLOROPLAST,
 		mito = LENGTH_MITOCHONDRIA,
 		genome = LENGTH_GENOME,
-		jobName = "{depth}{kmer}{cov}",
+		jobName = "ca{depth}{read_select}",
 	conda:
 		"envs/canu.yaml",
 	shell:
 		"""
+		rm -f {params.dir}/failure
 		cp canuFailure.sh {params.dir}
 
 		if [ {wildcards.ass_type} == 'chloroplast' ]; then
@@ -485,7 +486,7 @@ rule hicanu:
 		chlor = LENGTH_CHLOROPLAST,
 		mito = LENGTH_MITOCHONDRIA,
 		genome = LENGTH_GENOME,
-		jobName = "{depth}{kmer}{cov}",
+		jobName = "hi{depth}{read_select}",
 	conda:
 		"envs/canuv2.yaml",
 	shell:
@@ -678,8 +679,8 @@ rule busco:
 		"benchmarks/busco/assemblytype_genome_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
 	threads:
 		MAX_THREADS
-	shadow:
-		"full",
+#	shadow:
+#		"full",
 	singularity:
 		"docker://ezlabgva/busco:v4.0.5_cv1",
 	params:
@@ -688,10 +689,10 @@ rule busco:
 	shell:
 		"""
 		busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome
-		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
-		mv results/blast_db busco/{params.outdir}/results
-		mv results/logs busco/{params.outdir}/results
-		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
+#		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
+#		mv results/blast_db busco/{params.outdir}/results
+#		mv results/logs busco/{params.outdir}/results
+#		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
 		"""
 
 rule gt_ltrharvest:
@@ -843,5 +844,45 @@ rule mummer:
 		mv {params.pref}.* mummer/{wildcards.ass_type}
 		"""
 
+rule minimap2:
+	input:
+		draft = "4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
+		reads = "3_{ass_type}_subset/{read_select}/{sample}_{kmer}_{cov}_{depth}.fasta",
+	output:
+		temp("4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/hifi_mapped.sam"),
+	log:
+		"logs/minimap2/{ass_type}_{tool}_{sample}_{read_select}_{kmer}_{cov}_{depth}.log",
+	benchmark:
+		"benchmarks/minimap2/assemblytype_{ass_type}_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	conda:
+		"envs/minimap.yaml",
+	params:
+		dir = "4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}",
+	threads:
+		MAX_THREADS
+	shell:
+		"""
+		minimap2 -ax map-pb --eqx -m 5000 -t {threads} --secondary=no {input.draft} {input.reads} | samtools view -F 1796 - > {output}
+		"""
+
+rule racon:
+	input:
+		sam = "4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/hifi_mapped.sam",
+		draft = "4_{ass_type}_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
+		reads = "3_{ass_type}_subset/{read_select}/{sample}_{kmer}_{cov}_{depth}.fasta",
+	output:
+		"5_{ass_type}_polished/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/1_assembly.fasta",
+	log:
+		"logs/racon/{ass_type}_{tool}_{sample}_{read_select}_{kmer}_{cov}_{depth}.log",
+	benchmark:
+		"benchmarks/racon/assemblytype_{ass_type}_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	conda:
+		"envs/racon.yaml",
+	threads:
+		48
+	shell:
+		"""
+		racon {input.reads} {input.sam} {input.draft} -u -t {threads} > {output}
+		"""
 
 

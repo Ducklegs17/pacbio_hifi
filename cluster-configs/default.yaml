@@ -83,6 +83,17 @@ flye:
         mem           : "{resources.mem_mb}"
         time          : "00-00:{resources.time}:00"
 
+minimap2:
+        cpus-per-task : 10
+        mem           : "30000"
+        time          : "00-10:00:00"
+
+racon:
+        cpus-per-task : 30
+        mem           : "200000"
+        time          : "00-10:00:00"
+
+
 canu:
         cpus-per-task : 1
         mem           : "50"
@@ -124,8 +135,8 @@ mummer :
         time          : "00-00:{resources.time}:00"
 
 busco:
-        cpus-per-task : 10
-        mem           : "30000"
+        cpus-per-task : 48
+        mem           : "50000"
         time          : "00-08:00:00"
 
 gt_ltrharvest:
