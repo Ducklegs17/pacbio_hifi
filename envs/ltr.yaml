@@ -5,3 +5,4 @@ channels:
  - defaults
 dependencies: 
  - ltr_retriever=2.8
+ - perl-text-soundex=3.05

@@ -140,17 +140,17 @@ busco:
         time          : "00-08:00:00"
 
 gt_ltrharvest:
-        cpus-per-task : 10
-        mem           : "10000"
+        cpus-per-task : 20
+        mem           : "20000"
         time          : "00-00:35:00"
 
 ltr_finder:
-        cpus-per-task : 10
-        mem           : "5000"
+        cpus-per-task : 20
+        mem           : "10000"
         time          : "00-00:07:00"
 
 ltr_retriever:
-        cpus-per-task : 10
-        mem           : "20000"
+        cpus-per-task : 20
+        mem           : "50000"
         time          : "00-03:30:00"
 
