@@ -338,7 +338,7 @@ rule flye:
 		genome = LENGTH_GENOME,
 		out = "4_{ass_type}_assembly/flye/{sample}/{read_select}_{kmer}_{cov}_{depth}",
 	resources:
-		time = lambda wildcards, input: (360 if wildcards.ass_type  == 'genome' else 10),
+		time = lambda wildcards, input: (360 if wildcards.ass_type  == 'genome' else 20),
 		mem_mb = lambda wildcards, input: (70000 if wildcards.ass_type == 'genome' else 5000),
 		cpu = lambda wildcards, input: (25 if wildcards.ass_type == 'genome' else 5), 
 	conda:
@@ -378,11 +378,12 @@ rule canu:
 		chlor = LENGTH_CHLOROPLAST,
 		mito = LENGTH_MITOCHONDRIA,
 		genome = LENGTH_GENOME,
-		jobName = "{depth}{kmer}{cov}",
+		jobName = "ca{depth}{read_select}",
 	conda:
 		"envs/canu.yaml",
 	shell:
 		"""
+		rm -f {params.dir}/failure
 		cp canuFailure.sh {params.dir}
 
 		if [ {wildcards.ass_type} == 'chloroplast' ]; then
@@ -439,9 +440,10 @@ rule hicanu:
 		chlor = LENGTH_CHLOROPLAST,
 		mito = LENGTH_MITOCHONDRIA,
 		genome = LENGTH_GENOME,
-		jobName = "{depth}{kmer}{cov}",
+		jobName = "hi{depth}{read_select}",
 	shell:
 		"""	
+		rm -f {params.dir}/failure
 		cp canuFailure.sh {params.dir}
 
 		ETIME="--time=00:10:00"
@@ -458,7 +460,7 @@ rule hicanu:
 		fi	
 		if [ {wildcards.ass_type} == 'genome' ]; then
 			SIZE={params.genome}
-			JTIME="--time=01:00:00"
+			JTIME="--time=02:00:00"
 			ETIME="--time=00:20:00"
 			echo "Starting HiCanu genome assembly ..."
 		fi
@@ -537,7 +539,7 @@ rule hifiasm:
 	shadow:
 		"shallow"
 	resources:
-		time = lambda wildcards, input: (180 if wildcards.ass_type  == 'genome' else 10),
+		time = lambda wildcards, input: (300 if wildcards.ass_type  == 'genome' else 10),
 		mem_mb = lambda wildcards, input: (60000 if wildcards.ass_type == 'genome' else 5000),
 		cpu = lambda wildcards, input: (20 if wildcards.ass_type == 'genome' else 5),
 	threads:
@@ -605,7 +607,7 @@ rule quastref:
 	resources:
 		mem_mb = lambda wildcards, input: (15000 if wildcards.ass_type == 'genome' else 3000),
 		cpu = lambda wildcards, input: (5 if wildcards.ass_type == 'genome' else 1),
-		time = lambda wildcards, input: (60 if wildcards.ass_type == 'genome' else 2),
+		time = lambda wildcards, input: (30 if wildcards.ass_type == 'genome' else 2),
 	params:
 		out = "quastref/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}"
 	singularity:
@@ -624,6 +626,7 @@ rule busco:
 		fasta = "4_genome_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
 	output:
 		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/results/run_poales_odb10/full_table.tsv",
+#		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/results/short_summary.specific.poales_odb10.results.txt",
 	log:
 		"logs/busco/genome/{tool}_{read_select}_{sample}_{kmer}_{cov}_{depth}.log",
 	benchmark:
@@ -639,10 +642,10 @@ rule busco:
 		lineage_path = "./reference/poales_odb10",
 	shell:
 		"""
-		busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome
+		(busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome) 2> {log}
 		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
 		mv results/blast_db busco/{params.outdir}/results
-		mv results/logs busco/{params.outdir}/results
+#		mv results/logs busco/{params.outdir}/results
 		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
 		"""
 
@@ -727,8 +730,8 @@ rule ltr_retriever:
 		LTR_retriever -genome {params.dir}assembly.fasta -inharvest {output.scn} -threads {threads}
 		
 		if [ {wildcards.tool} == 'hifiasm' ]; then
-			mv assembly.fasta.out.* {params.dir}
-			rm assembly.fasta.out
+			mv assembly.fasta.*.LAI {params.dir}
+#			rm assembly.fasta.out
 			rm {params.dir}assembly.fasta
 			touch {output.dummy}
 		fi
@@ -764,6 +767,7 @@ rule contig_length:
 		"""
 		cat {input} | awk '$0 ~ ">" {{if (NR > 1) {{print c;}} c=0;printf substr($0,2,100) "\t"; }} $0 !~ ">" {{c+=length($0);}} END {{ print c; }}' > {output}
 		"""
+
 rule mummer:
 	input:
 		ref = "reference/{ass_type}.fasta",

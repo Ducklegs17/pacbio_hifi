@@ -4,4 +4,4 @@ channels:
  - conda-forge
  - defaults
 dependencies: 
- - flye=2.6
+ - flye=2.7
