@@ -675,14 +675,15 @@ rule busco:
 		fasta = "4_genome_assembly/{tool}/{sample}/{read_select}_{kmer}_{cov}_{depth}/assembly.fasta",
 	output:
 		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/results/run_poales_odb10/full_table.tsv",
+#		"busco/assemblytype_genome_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/results/short_summary.specific.poales_odb10.results.txt",
 	log:
 		"logs/busco/genome/{tool}_{read_select}_{sample}_{kmer}_{cov}_{depth}.log",
 	benchmark:
 		"benchmarks/busco/assemblytype_genome_readselect_{read_select}_assemblytool_{tool}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
 	threads:
 		MAX_THREADS
-#	shadow:
-#		"full",
+	shadow:
+		"full",
 	singularity:
 		"docker://ezlabgva/busco:v4.0.5_cv1",
 	params:
@@ -690,11 +691,11 @@ rule busco:
 		lineage_path = "./reference/poales_odb10",
 	shell:
 		"""
-		busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome
-#		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
-#		mv results/blast_db busco/{params.outdir}/results
+		(busco -f --in {input.fasta} --out results --lineage_dataset {params.lineage_path} --cpu {threads} --mode genome) 2> {log}
+		mv results/short_summary.specific.poales_odb10.results.txt busco/{params.outdir}/results
+		mv results/blast_db busco/{params.outdir}/results
 #		mv results/logs busco/{params.outdir}/results
-#		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
+		mv results/run_poales_odb10/* busco/{params.outdir}/results/run_poales_odb10/
 		"""
 
 rule gt_ltrharvest:
@@ -755,7 +756,7 @@ rule ltr_retriever:
 		harvest = "ltr/harvest/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/assembly.fa.harvest.scn",
 	output:
 		scn = "ltr/retriever/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/rawLTR.scn",
-		lai =  "ltr/retriever/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/assembly.fasta.out.LAI",
+		lai =  "ltr/retriever/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/LAI_score.txt",
 		dummy = "ltr/retriever/assemblytype_{ass_type}_assemblytool_{tool}_readselect_{read_select}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}/complete",
 	log:
 		"logs/ltr_retriever/{ass_type}/{tool}_{read_select}_{sample}_{kmer}_{cov}_{depth}.log",
@@ -777,9 +778,10 @@ rule ltr_retriever:
 		rm -f {params.dir}assembly.fasta
 		cp {input.genome} {params.dir}
 		LTR_retriever -genome {params.dir}assembly.fasta -inharvest {output.scn} -threads {threads}
-
-		mv assembly.fasta.*.LAI {params.dir}LAI_score.txt
 		
+		mv assembly.fasta.*.LAI {params.dir}LAI_score.txt
+		touch {output.dummy}
+
 #		if [ {wildcards.tool} == 'hifiasm' ]; then
 #			mv assembly.fasta.out.* {params.dir}
 #			rm assembly.fasta.out
