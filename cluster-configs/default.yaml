@@ -135,22 +135,22 @@ mummer :
         time          : "00-00:{resources.time}:00"
 
 busco:
-        cpus-per-task : 48
+        cpus-per-task : 10
         mem           : "50000"
-        time          : "00-08:00:00"
+        time          : "00-05:00:00"
 
 gt_ltrharvest:
-        cpus-per-task : 20
+        cpus-per-task : 10
         mem           : "20000"
-        time          : "00-00:35:00"
+        time          : "00-00:50:00"
 
 ltr_finder:
-        cpus-per-task : 20
+        cpus-per-task : 10
         mem           : "10000"
         time          : "00-00:07:00"
 
 ltr_retriever:
-        cpus-per-task : 20
+        cpus-per-task : 10
         mem           : "50000"
         time          : "00-03:30:00"
 

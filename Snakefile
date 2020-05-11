@@ -16,12 +16,12 @@ LENGTH_GENOME = ["387500000"]
 ASSEMBLY_TYPE = ["genome"]
 ASSEMBLY_TOOLS = ["hifiasm","flye"]
 READ_SELECTION_METHOD = ["random","longest"]
-HIFIASM_PATH = "/shared/cmatthews/tools/hifiasm/hifiasm"
-HICANU_PATH = "/shared/cmatthews/tools/canu/Linux-amd64/bin/canu"
+HIFIASM_PATH = "/home/a1761942/fast_dir/tools/hifiasm/hifiasm"
+HICANU_PATH = "/home/a1761942/fast_dir/tools/canu/Linux-amd64/bin/canu"
 GFA_TYPES = ["p_ctg"]
-LTR_FINDER_PATH = "/shared/cmatthews/tools/LTR_FINDER_parallel/LTR_FINDER_parallel"
+LTR_FINDER_PATH = "/home/a1761942/fast_dir/tools/LTR_FINDER_parallel-master/LTR_FINDER_parallel"
 LTRFILES = ["rawLTR.scn","assembly.fasta.out.LAI"]
-MUMMER_PATH = "/shared/cmatthews/tools/mummer-4.0.0beta2/" 
+MUMMER_PATH = "/home/a1761942/fast_dir/tools/mummer-4.0.0beta2/" 
 CANU_BENCHMARK_FILES = ["job_finish_state","submit_time","start_time","end_time","walltime_reserved","walltime_elapsed","max_memory","max_disk_write","max_disk_read","num_cores"]
 
 
@@ -34,10 +34,10 @@ localrules:
 
 rule all:
 	input:
-#		expand("0_raw/{PREFIX}.subreads.bam.pbi", PREFIX = PREFIXES),
-#		expand("1_subreads/chunks/{PREFIX}.ccs.{NUM}.bam", NUM = range(1,CHUNKS+1), PREFIX = PREFIXES),
-#		expand("1_subreads/{PREFIX}.ccs.bam", PREFIX = PREFIXES),
-#		expand("1_subreads/{SAMPLE}.ccs.bam", SAMPLE = SAMPLES),
+		expand("0_raw/{PREFIX}.subreads.bam.pbi", PREFIX = PREFIXES),
+		expand("1_subreads/chunks/{PREFIX}.ccs.{NUM}.bam", NUM = range(1,CHUNKS+1), PREFIX = PREFIXES),
+		expand("1_subreads/{PREFIX}.ccs.bam", PREFIX = PREFIXES),
+		expand("1_subreads/{SAMPLE}.ccs.bam", SAMPLE = SAMPLES),
 		expand("2_{ASS_TYPE}_reads/unsorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}.fasta", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),
 		expand("2_{ASS_TYPE}_reads/sorted/{SAMPLE}_{KMER}_{COV}_coveragetable.txt", ASS_TYPE = ASSEMBLY_TYPE, SAMPLE = SAMPLES, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE),	
@@ -55,236 +55,236 @@ rule all:
 		expand("5_{ASS_TYPE}_polished/{TOOL}/{SAMPLE}/{READ_SELECT}_{KMER}_{COV}_{DEPTH}/1_assembly.fasta", ASS_TYPE = ASSEMBLY_TYPE, TOOL = ASSEMBLY_TOOLS, SAMPLE = SAMPLES, READ_SELECT = READ_SELECTION_METHOD, KMER = BBDUK_KMER, COV = BBDUK_COVERAGE, DEPTH = READ_DEPTH),
 
 #creates an index file of the raw hifi reads
-#rule pbindex:
-#	input:
-#		"0_raw/{prefix, SRR[0-9]*\.\m[0-9]*\.[0-9]*}.subreads.bam",	
-#	output:
-#		"0_raw/{prefix}.subreads.bam.pbi",
-#	log:
-#		"logs/pbindex/{prefix}.log",
-#	benchmark:
-#		"benchmarks/pbindex/prefix_{prefix}.tsv",
-#	threads:
-#		1	
-#	conda:
-#		"envs/pacbio.yaml"
-#	shell:
-#		"""
-#		pbindex {input}
-#		"""
+rule pbindex:
+	input:
+		"0_raw/{prefix, SRR[0-9]*\.\m[0-9]*\.[0-9]*}.subreads.bam",	
+	output:
+		"0_raw/{prefix}.subreads.bam.pbi",
+	log:
+		"logs/pbindex/{prefix}.log",
+	benchmark:
+		"benchmarks/pbindex/prefix_{prefix}.tsv",
+	threads:
+		1	
+	conda:
+		"envs/pacbio.yaml"
+	shell:
+		"""
+		pbindex {input}
+		"""
+
+# generate high quality consensus reads
+rule ccs:
+	input:
+		sub = "0_raw/{prefix, SRR[0-9]*\.\m[0-9]*\.[0-9]*}.subreads.bam",
+		pbi = "0_raw/{prefix}.subreads.bam.pbi",
+	output:
+		"1_subreads/chunks/{prefix}.ccs.{num}.bam",
+	log:
+		"logs/ccs/{prefix}_{num}.log"
+	benchmark:
+		"benchmarks/ccs/prefix_{prefix}_chunknum_{num}.tsv"	
+	threads:
+		MAX_THREADS
+	params:
+		chnk = CHUNKS
+	conda:
+		"envs/pacbio.yaml",
+	shell:
+		"""
+		ccs {input.sub} {output} --chunk {wildcards.num}/{params.chnk} -j {threads}
+		"""
+
+#merge chunks
+rule pbmerge:
+	input:
+		expand("1_subreads/chunks/{{prefix}}.ccs.{num}.bam", prefix = PREFIXES, num = range(1,CHUNKS+1)),
+	output:
+		"1_subreads/{prefix}.ccs.bam",
+	log:
+		"logs/pbmerge/{prefix}.log",
+	benchmark:
+		"benchmarks/pbmerge/prefix_{prefix}.log",
+	threads:
+		MAX_THREADS
+	conda:
+		"envs/pacbio.yaml",
+	shell:
+		"""
+		pbmerge -o {output} {input}
+		"""
+
+#merge bam files
+rule pbmerge_sample:
+	input:
+		expand("1_subreads/{prefix}.ccs.bam", prefix = PREFIXES),
+	output:
+		"1_subreads/{sample}.ccs.bam",
+	log:
+		"logs/pbmergesample/{sample}.log",
+	benchmark:
+		"benchmarks/pbmergesample/prefix_{sample}.tsv",
+	threads:
+		1
+	conda:
+		"envs/pacbio.yaml",
+	shell:
+		"""
+		pbmerge -o {output} {input}
+		"""	
+rule bbduk:
+	input:
+		bam = "1_subreads/{sample}.ccs.bam",
+		ref = "reference/{ass_type}.fasta",
+	output:
+		out = "2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbduk/{sample}_{ass_type}_{kmer}_{cov}.log",
+	benchmark:
+		"benchmarks/bbduk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		5
+	wildcard_constraints:
+		ass_type = "(mitochondria|chloroplast)",
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		echo "Extracting {wildcards.ass_type} reads with bbduk..."
+		bbduk.sh in={input.bam} outm={output.out} ref={input.ref} threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
+		"""
+
+rule bbdukfq:
+	input:
+		fastq = "1_subreads/{sample}.fastq",
+		ref = "reference/{ass_type}.fasta",
+	output:
+		 out = "2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbdukfq/{sample}_{ass_type}_{kmer}_{cov}.log",
+	benchmark:
+		"benchmarks/bbdukfq/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		MAX_THREADS
+	wildcard_constraints:
+		ass_type = "(mitochondria|chloroplast)",
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		bbduk.sh in={input.fastq} outm={output.out} ref={input.ref} qin=33 threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
+		"""
+
+rule bbdukfq_genome:
+	input:
+		seq = "1_subreads/{sample}.fastq",
+		ref1 = "reference/chloroplast.fasta",
+		ref2 = "reference/mitochondria.fasta",
+	output:
+		"2_genome_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
+	benchmark:
+		"benchmarks/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		MAX_THREADS
+	wildcard_constraints:
+		ass_type = "genome",
+		sample = "rice24kb",
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} qin=33 -Xmx60g mincovfraction={wildcards.cov}
+		"""
+
+rule bbduk_genome:
+	input:
+		seq = "1_subreads/{sample}.ccs.bam",
+		ref1 = "reference/chloroplast.fasta",
+		ref2 = "reference/mitochondria.fasta",
+	output:
+		"2_genome_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
+	benchmark:
+		"benchmarks/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		MAX_THREADS
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} -Xmx60g mincovfraction={wildcards.cov}
+		"""
+
+#subset the matching reads down to specified coverage
+rule seqtk:
+	input:
+		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	output:
+		"3_{ass_type}_subset/random/{sample}_{kmer}_{cov}_{depth}.fasta",
+	log:
+		"logs/seqtk/random_{ass_type}_{sample}_{kmer}_{cov}_{depth}.log",
+	benchmark:
+		"benchmarks/seqtk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
+	threads:
+		1
+	resources:
+                time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
+                mem_mb = lambda wildcards, input: (15000 if wildcards.ass_type == 'genome' else 200),
+                cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
+	params:
+		chlor = LENGTH_CHLOROPLAST,
+		mito = LENGTH_MITOCHONDRIA,
+		geno = LENGTH_GENOME,
+	conda:
+		"envs/seqtk.yaml",
+	shell:
+		"""		
+		if [ {wildcards.ass_type} == "chloroplast" ]; then
+			LENGTH={params.chlor}
+		fi
+		if [ {wildcards.ass_type} == "mitochondria" ]; then
+			LENGTH={params.mito}
+		fi
+		if [ {wildcards.ass_type} == "genome" ]; then
+			LENGTH={params.geno}
+		fi
+		BP_READS="$(grep -v "^>" {input} | wc | awk "{{print \$3-\$1}}")"
+                NO_READS="$(grep '>' {input} | wc -l)"
+                echo "Total number of reads: ${{NO_READS}}"
+                AVG="$(( ${{BP_READS}} / ${{NO_READS}} ))"
+                echo "AVG length of reads: ${{AVG}}"
+                NUM="$(( ${{LENGTH}} * {wildcards.depth} / ${{AVG}} ))"
+                echo "Number of reads required to achieve depth of {wildcards.depth}: ${{NUM}}"
+                MAX_DEPTH="$(( ${{BP_READS}} / ${{LENGTH}} ))"
+                if [ ${{NUM}} -gt ${{NO_READS}} ]; then
+                        NUM=${{NO_READS}}
+                        echo "Number of reads required for requested coverage is greater than the number of reads available."
+                        echo "All reads will be used, giving a coverage depth of ${{MAX_DEPTH}}x"
+                fi
+                echo "Subsetting ..."
+                seqtk sample -s100 {input} ${{NUM}} > {output}
+		"""
 #
-## generate high quality consensus reads
-#rule ccs:
-#	input:
-#		sub = "0_raw/{prefix, SRR[0-9]*\.\m[0-9]*\.[0-9]*}.subreads.bam",
-#		pbi = "0_raw/{prefix}.subreads.bam.pbi",
-#	output:
-#		"1_subreads/chunks/{prefix}.ccs.{num}.bam",
-#	log:
-#		"logs/ccs/{prefix}_{num}.log"
-#	benchmark:
-#		"benchmarks/ccs/prefix_{prefix}_chunknum_{num}.tsv"	
-#	threads:
-#		MAX_THREADS
-#	params:
-#		chnk = CHUNKS
-#	conda:
-#		"envs/pacbio.yaml",
-#	shell:
-#		"""
-#		ccs {input.sub} {output} --chunk {wildcards.num}/{params.chnk} -j {threads}
-#		"""
-#
-##merge chunks
-#rule pbmerge:
-#	input:
-#		expand("1_subreads/chunks/{{prefix}}.ccs.{num}.bam", prefix = PREFIXES, num = range(1,CHUNKS+1)),
-#	output:
-#		"1_subreads/{prefix}.ccs.bam",
-#	log:
-#		"logs/pbmerge/{prefix}.log",
-#	benchmark:
-#		"benchmarks/pbmerge/prefix_{prefix}.log",
-#	threads:
-#		MAX_THREADS
-#	conda:
-#		"envs/pacbio.yaml",
-#	shell:
-#		"""
-#		pbmerge -o {output} {input}
-#		"""
-#
-##merge bam files
-#rule pbmerge_sample:
-#	input:
-#		expand("1_subreads/{prefix}.ccs.bam", prefix = PREFIXES),
-#	output:
-#		"1_subreads/{sample}.ccs.bam",
-#	log:
-#		"logs/pbmergesample/{sample}.log",
-#	benchmark:
-#		"benchmarks/pbmergesample/prefix_{sample}.tsv",
-#	threads:
-#		1
-#	conda:
-#		"envs/pacbio.yaml",
-#	shell:
-#		"""
-#		pbmerge -o {output} {input}
-#		"""	
-#rule bbduk:
-#	input:
-#		bam = "1_subreads/{sample}.ccs.bam",
-#		ref = "reference/{ass_type}.fasta",
-#	output:
-#		out = "2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbduk/{sample}_{ass_type}_{kmer}_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbduk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		5
-#	wildcard_constraints:
-#		ass_type = "(mitochondria|chloroplast)",
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		echo "Extracting {wildcards.ass_type} reads with bbduk..."
-#		bbduk.sh in={input.bam} outm={output.out} ref={input.ref} threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
-#		"""
-#
-#rule bbdukfq:
-#	input:
-#		fastq = "1_subreads/{sample}.fastq",
-#		ref = "reference/{ass_type}.fasta",
-#	output:
-#		 out = "2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbdukfq/{sample}_{ass_type}_{kmer}_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbdukfq/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		MAX_THREADS
-#	wildcard_constraints:
-#		ass_type = "(mitochondria|chloroplast)",
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		bbduk.sh in={input.fastq} outm={output.out} ref={input.ref} qin=33 threads={threads} k={wildcards.kmer} -Xmx1g mincovfraction={wildcards.cov}
-#		"""
-#
-#rule bbdukfq_genome:
-#	input:
-#		seq = "1_subreads/{sample}.fastq",
-#		ref1 = "reference/chloroplast.fasta",
-#		ref2 = "reference/mitochondria.fasta",
-#	output:
-#		"2_genome_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		MAX_THREADS
-#	wildcard_constraints:
-#		ass_type = "genome",
-#		sample = "rice24kb",
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} qin=33 -Xmx60g mincovfraction={wildcards.cov}
-#		"""
-#
-#rule bbduk_genome:
-#	input:
-#		seq = "1_subreads/{sample}.ccs.bam",
-#		ref1 = "reference/chloroplast.fasta",
-#		ref2 = "reference/mitochondria.fasta",
-#	output:
-#		"2_genome_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbdukgenome/assemblytype_genome_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		MAX_THREADS
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		bbduk.sh in={input.seq} out={output} ref={input.ref1},{input.ref2} threads={threads} k={wildcards.kmer} -Xmx60g mincovfraction={wildcards.cov}
-#		"""
-#
-##subset the matching reads down to specified coverage
-#rule seqtk:
-#	input:
-#		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	output:
-#		"3_{ass_type}_subset/random/{sample}_{kmer}_{cov}_{depth}.fasta",
-#	log:
-#		"logs/seqtk/random_{ass_type}_{sample}_{kmer}_{cov}_{depth}.log",
-#	benchmark:
-#		"benchmarks/seqtk/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}_depth_{depth}.tsv",
-#	threads:
-#		1
-#	resources:
-#                time = lambda wildcards, input: (60 if wildcards.ass_type  == 'genome' else 1),
-#                mem_mb = lambda wildcards, input: (15000 if wildcards.ass_type == 'genome' else 200),
-#                cpu = lambda wildcards, input: (1 if wildcards.ass_type == 'genome' else 1),
-#	params:
-#		chlor = LENGTH_CHLOROPLAST,
-#		mito = LENGTH_MITOCHONDRIA,
-#		geno = LENGTH_GENOME,
-#	conda:
-#		"envs/seqtk.yaml",
-#	shell:
-#		"""		
-#		if [ {wildcards.ass_type} == "chloroplast" ]; then
-#			LENGTH={params.chlor}
-#		fi
-#		if [ {wildcards.ass_type} == "mitochondria" ]; then
-#			LENGTH={params.mito}
-#		fi
-#		if [ {wildcards.ass_type} == "genome" ]; then
-#			LENGTH={params.geno}
-#		fi
-#		BP_READS="$(grep -v "^>" {input} | wc | awk "{{print \$3-\$1}}")"
-#                NO_READS="$(grep '>' {input} | wc -l)"
-#                echo "Total number of reads: ${{NO_READS}}"
-#                AVG="$(( ${{BP_READS}} / ${{NO_READS}} ))"
-#                echo "AVG length of reads: ${{AVG}}"
-#                NUM="$(( ${{LENGTH}} * {wildcards.depth} / ${{AVG}} ))"
-#                echo "Number of reads required to achieve depth of {wildcards.depth}: ${{NUM}}"
-#                MAX_DEPTH="$(( ${{BP_READS}} / ${{LENGTH}} ))"
-#                if [ ${{NUM}} -gt ${{NO_READS}} ]; then
-#                        NUM=${{NO_READS}}
-#                        echo "Number of reads required for requested coverage is greater than the number of reads available."
-#                        echo "All reads will be used, giving a coverage depth of ${{MAX_DEPTH}}x"
-#                fi
-#                echo "Subsetting ..."
-#                seqtk sample -s100 {input} ${{NUM}} > {output}
-#		"""
-##
-#rule bbmap_sort:
-#	input:
-#		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
-#	output:
-#		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
-#	log:
-#		"logs/bbmap_sort/{ass_type}{sample}_{kmer}_{cov}.log",
-#	benchmark:
-#		"benchmarks/bbmapsort/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
-#	threads:
-#		1
-#	conda:
-#		"envs/bbmap.yaml",
-#	shell:
-#		"""
-#		sortbyname.sh in={input} out={output} name=f length=t ascending=f -Xmx60g
-#		"""
+rule bbmap_sort:
+	input:
+		"2_{ass_type}_reads/unsorted/{sample}_{kmer}_{cov}.fasta",
+	output:
+		"2_{ass_type}_reads/sorted/{sample}_{kmer}_{cov}.fasta",
+	log:
+		"logs/bbmap_sort/{ass_type}{sample}_{kmer}_{cov}.log",
+	benchmark:
+		"benchmarks/bbmapsort/assemblytype_{ass_type}_prefix_{sample}_kmer_{kmer}_cov_{cov}.tsv",
+	threads:
+		1
+	conda:
+		"envs/bbmap.yaml",
+	shell:
+		"""
+		sortbyname.sh in={input} out={output} name=f length=t ascending=f -Xmx60g
+		"""
 
 rule generate_coverage_list:
 	input:
